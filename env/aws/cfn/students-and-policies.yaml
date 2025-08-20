@@ -1,0 +1,170 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: cloud-capstone-project student's authorizations
+
+Resources:
+  StudentGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: student-policies
+      ManagedPolicyArns:
+        - Ref: StudentStandardPolicy
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+      Path: "/"
+
+  User001:
+    Type: "AWS::IAM::User"
+    DeletionPolicy: Delete
+    Properties:
+      Path: "/"
+      UserName: user001@ccp
+      Groups:
+        - !Ref StudentGroup
+      LoginProfile:
+        Password: Karinopassword1234!
+        PasswordResetRequired: true
+
+  User002:
+    Type: "AWS::IAM::User"
+    DeletionPolicy: Delete
+    Properties:
+      Path: "/"
+      UserName: user002@ccp
+      Groups:
+        - !Ref StudentGroup
+      LoginProfile:
+        Password: Karinopassword1234!
+        PasswordResetRequired: true
+
+  User003:
+    Type: "AWS::IAM::User"
+    DeletionPolicy: Delete
+    Properties:
+      Path: "/"
+      UserName: user003@ccp
+      Groups:
+        - !Ref StudentGroup
+      LoginProfile:
+        Password: Karinopassword1234!
+        PasswordResetRequired: true
+
+  User004:
+    Type: "AWS::IAM::User"
+    DeletionPolicy: Delete
+    Properties:
+      Path: "/"
+      UserName: user004@ccp
+      Groups:
+        - !Ref StudentGroup
+      LoginProfile:
+        Password: Karinopassword1234!
+        PasswordResetRequired: true
+
+  User005:
+    Type: "AWS::IAM::User"
+    DeletionPolicy: Delete
+    Properties:
+      Path: "/"
+      UserName: user005@ccp
+      Groups:
+        - !Ref StudentGroup
+      LoginProfile:
+        Password: Karinopassword1234!
+        PasswordResetRequired: true
+
+  User006:
+    Type: "AWS::IAM::User"
+    DeletionPolicy: Delete
+    Properties:
+      Path: "/"
+      UserName: user006@ccp
+      Groups:
+        - !Ref StudentGroup
+      LoginProfile:
+        Password: Karinopassword1234!
+        PasswordResetRequired: true
+
+  StudentStandardPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: CcpStudentStandardPolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowAllResources
+            Effect: Allow
+            Action:
+              - iam:UpdateLoginProfile
+              - iam:GetAccountPasswordPolicy
+              - iam:ChangePassword
+              - iam:List*
+              - iam:Get*
+              - iam:PassRole
+              - iam:CreateRole
+              - iam:DeleteRole
+              - iam:CreatePolicy
+              - iam:CreatePolicyVersion
+              - iam:CreateServiceLinkedRole
+              - iam:DeleteServiceLinkedRole
+              - iam:DeletePolicyVersion
+              - iam:AttachRolePolicy
+              - iam:DetachRolePolicy
+              - iam:PutRolePolicy
+              - iam:SetDefaultPolicyVersion
+              - iam:TagRole
+              - iam:*InstanceProfile
+              - ec2:*
+              - elasticloadbalancing:*
+              - autoscaling:*
+              - rds:*
+              - s3:*
+              - cloudformation:*
+              - ssm:*
+              - backup:*
+              - backup-storage:MountCapsule
+              - kms:CreateGrant
+              - kms:GenerateDataKey
+              - kms:Decrypt
+              - kms:RetireGrant
+              - kms:DescribeKey
+              - cloudwatch:*
+              - logs:*
+              - route53:*
+              - acm:*
+              - cloudshell:*
+              - cloudfront:*
+            Resource: "*"
+          - Sid: ConstrainedIAMPolicyUpdate1
+            Effect: Deny
+            Action:
+              - iam:CreatePolicyVersion
+            Resource:
+              - arn:aws:iam::*:policy/*_policy
+          - Sid: RestrictedEC2Operation1
+            Effect: Deny
+            Action: ec2:*Spot*
+            Resource: "*"
+          - Sid: CanOnlyUseMinimumSizeInstances
+            Effect: Deny
+            Action:
+              - ec2:StartInstances
+              - ec2:RunInstances
+            Resource: arn:aws:ec2:*:*:instance/*
+            Condition:
+              StringNotEquals:
+                ec2:InstanceType:
+                  - t2.nano
+                  - t2.micro
+                  - t3.nano
+                  - t3a.nano
+                  - t3.micro
+                  - t3a.micro
+          - Sid: RestrictedRdsOperation
+            Effect: Deny
+            Action:
+              - rds:StartInstance
+            Resource: arn:aws:rds:*:*:db:*
+            Condition:
+              StringNotEquals:
+                ec2:InstanceType:
+                  - db.t2.micro
+                  - db.t3.micro
