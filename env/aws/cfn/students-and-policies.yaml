@@ -112,6 +112,7 @@ Resources:
               - iam:SetDefaultPolicyVersion
               - iam:TagRole
               - iam:*InstanceProfile
+              - iam:CreateAccessKey
               - ec2:*
               - elasticloadbalancing:*
               - autoscaling:*
@@ -132,17 +133,31 @@ Resources:
               - acm:*
               - cloudshell:*
               - cloudfront:*
+              - ec2-instance-connect:*
             Resource: "*"
+            
+          - Sid: DenyExportablePublicCertificate
+            Effect: Deny
+            Action:
+              - acm:RequestCertificate
+            Resource: "*"
+            Condition:
+              StringEquals:
+                acm:Export:
+                  - ENABLED
+
           - Sid: ConstrainedIAMPolicyUpdate1
             Effect: Deny
             Action:
               - iam:CreatePolicyVersion
             Resource:
               - arn:aws:iam::*:policy/*_policy
+
           - Sid: RestrictedEC2Operation1
             Effect: Deny
             Action: ec2:*Spot*
             Resource: "*"
+
           - Sid: CanOnlyUseMinimumSizeInstances
             Effect: Deny
             Action:
@@ -158,6 +173,7 @@ Resources:
                   - t3a.nano
                   - t3.micro
                   - t3a.micro
+
           - Sid: RestrictedRdsOperation
             Effect: Deny
             Action:
