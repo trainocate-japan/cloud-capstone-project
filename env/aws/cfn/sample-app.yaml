@@ -319,7 +319,7 @@ Resources:
       Port: 80
       Protocol: HTTP
       VpcId: !Ref VPC
-      HealthCheckPath: /
+      HealthCheckPath: /health.php
       HealthCheckProtocol: HTTP
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 5
@@ -359,10 +359,56 @@ Resources:
           Fn::Base64: !Sub |
             #!/bin/bash
             yum update -y
-            yum install -y httpd
+            
+            # Install Apache, PHP, and MySQL client
+            yum install -y httpd php php-mysqlnd php-gd php-xml php-mbstring php-json mariadb1011-client-utils
+            
+            # Start and enable Apache
             systemctl start httpd
             systemctl enable httpd
-            echo "<h1>Hello from $(hostname -f)</h1>" > /var/www/html/index.html
+            
+            # Download and install WordPress
+            cd /tmp
+            wget https://wordpress.org/latest.tar.gz
+            tar -xzf latest.tar.gz
+            cp -r wordpress/* /var/www/html/
+            
+            # Set proper permissions
+            chown -R apache:apache /var/www/html/
+            chmod -R 755 /var/www/html/
+            
+            # Create WordPress configuration
+            cd /var/www/html
+            cp wp-config-sample.php wp-config.php
+            
+            # Configure database connection
+            sed -i "s/database_name_here/maindb/" wp-config.php
+            sed -i "s/username_here/${DBUsername}/" wp-config.php
+            sed -i "s/password_here/${DBPassword}/" wp-config.php
+            sed -i "s/localhost/${RDSInstance.Endpoint.Address}/" wp-config.php
+            
+            # Add WordPress security keys (simplified for demo)
+            sed -i "s/put your unique phrase here/$(openssl rand -base64 32)/" wp-config.php
+            
+            # Create .htaccess for pretty permalinks
+            cat > /var/www/html/.htaccess << 'EOF'
+            # BEGIN WordPress
+            <IfModule mod_rewrite.c>
+            RewriteEngine On
+            RewriteBase /
+            RewriteRule ^index\.php$ - [L]
+            RewriteCond %{REQUEST_FILENAME} !-f
+            RewriteCond %{REQUEST_FILENAME} !-d
+            RewriteRule . /index.php [L]
+            </IfModule>
+            # END WordPress
+            EOF
+            
+            # Enable mod_rewrite
+            sed -i 's/AllowOverride None/AllowOverride All/g' /etc/httpd/conf/httpd.conf
+            
+            # Restart Apache to apply changes
+            systemctl restart httpd
             
             # Install and start SSM agent (usually pre-installed on Amazon Linux 2)
             yum install -y amazon-ssm-agent
@@ -372,20 +418,18 @@ Resources:
             # Install CloudWatch agent
             yum install -y amazon-cloudwatch-agent
             
-            # Create a simple load test endpoint for testing auto scaling
-            yum install -y php
-            cat > /var/www/html/load.php << 'EOF'
+            # Create a simple health check endpoint
+            cat > /var/www/html/health.php << 'EOF'
             <?php
-            // Simple CPU load generator for testing
-            $start = microtime(true);
-            while (microtime(true) - $start < 30) {
-                // Generate CPU load for 30 seconds
-                $x = 0;
-                for ($i = 0; $i < 1000000; $i++) {
-                    $x += sqrt($i);
-                }
+            // Simple health check
+            $connection = new mysqli('${RDSInstance.Endpoint.Address}', '${DBUsername}', '${DBPassword}', 'maindb');
+            if ($connection->connect_error) {
+                http_response_code(500);
+                echo "Database connection failed";
+            } else {
+                echo "OK - WordPress ready";
             }
-            echo "Load test completed";
+            $connection->close();
             ?>
             EOF
 

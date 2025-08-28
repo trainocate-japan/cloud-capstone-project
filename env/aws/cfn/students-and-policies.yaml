@@ -134,6 +134,7 @@ Resources:
               - cloudshell:*
               - cloudfront:*
               - ec2-instance-connect:*
+              - sns:*
             Resource: "*"
             
           - Sid: DenyExportablePublicCertificate
@@ -173,6 +174,8 @@ Resources:
                   - t3a.nano
                   - t3.micro
                   - t3a.micro
+                  - t3.medium
+                  - t3a.medium
 
           - Sid: RestrictedRdsOperation
             Effect: Deny
